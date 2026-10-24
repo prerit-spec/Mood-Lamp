@@ -42,7 +42,21 @@ final class WizClient: @unchecked Sendable {
         nonisolated(unsafe) var done = false
     }
 
-    func send(_ payload: [String: Any], to target: String? = nil, timeout: TimeInterval = 1.5) async throws -> [String: Any] {
+    /// UDP has no delivery guarantee and Wi-Fi bulbs drop packets, so try a few times before giving up.
+    func send(_ payload: [String: Any], to target: String? = nil, timeout: TimeInterval = 1.0, attempts: Int = 3) async throws -> [String: Any] {
+        var lastError: Error = WizError.timeout
+        for attempt in 0..<attempts {
+            do { return try await sendOnce(payload, to: target, timeout: timeout) }
+            catch WizError.noIP { throw WizError.noIP }
+            catch {
+                lastError = error
+                if attempt < attempts - 1 { try? await Task.sleep(nanoseconds: 200_000_000) }
+            }
+        }
+        throw lastError
+    }
+
+    private func sendOnce(_ payload: [String: Any], to target: String? = nil, timeout: TimeInterval) async throws -> [String: Any] {
         let host = (target ?? ip).trimmingCharacters(in: .whitespaces)
         guard !host.isEmpty else { throw WizError.noIP }
         let data = try JSONSerialization.data(withJSONObject: payload)
@@ -82,8 +96,10 @@ final class WizClient: @unchecked Sendable {
     func setPilot(_ params: [String: Any]) async throws {
         _ = try await sendResilient(["method": "setPilot", "params": params])
         if let state = params["state"] as? Bool {
-            Self.sharedDefaults?.set(state, forKey: "bulbOn")
-            WidgetCenter.shared.reloadAllTimelines()
+            let defaults = Self.sharedDefaults
+            let previousState = defaults?.object(forKey: "bulbOn") as? Bool
+            defaults?.set(state, forKey: "bulbOn")
+            if previousState != state { WidgetCenter.shared.reloadAllTimelines() }
         }
     }
 
@@ -159,7 +175,7 @@ final class WizClient: @unchecked Sendable {
                 for n in start..<min(start + 64, 255) {
                     let target = "\(prefix).\(n)"
                     group.addTask {
-                        guard let reply = try? await self.send(["method": "getPilot", "params": [String: Any]()], to: target, timeout: 0.6),
+                        guard let reply = try? await self.send(["method": "getPilot", "params": [String: Any]()], to: target, timeout: 0.6, attempts: 1),
                               let result = reply["result"] as? [String: Any],
                               let mac = result["mac"] as? String else { return nil }
                         return (target, mac)

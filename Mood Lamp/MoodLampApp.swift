@@ -49,7 +49,10 @@ final class MoodLampModel: ObservableObject {
     @Published var scene: MoodLampScene?
     @Published var error: String?
     @Published var reachable = true
+    @Published var hasLoaded = false
+    @Published var lastPollError: String?
 
+    private var failures = 0
     private var sendTask: Task<Void, Never>?
     private var pollTask: Task<Void, Never>?
     private var lastUserChange = Date.distantPast
@@ -63,6 +66,7 @@ final class MoodLampModel: ObservableObject {
         ip = value.trimmingCharacters(in: .whitespaces)
         WizClient.shared.ip = ip
         WizClient.shared.mac = ""
+        hasLoaded = false; failures = 0
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -84,6 +88,9 @@ final class MoodLampModel: ObservableObject {
             let p = try await WizClient.shared.getPilot(resilient: resilient)
             ip = WizClient.shared.ip
             reachable = true
+            hasLoaded = true
+            failures = 0
+            lastPollError = nil
             on = p["state"] as? Bool ?? false
             if let d = p["dimming"] as? Int { dimming = Double(d) }
             if let id = p["sceneId"] as? Int, id > 0 { scene = MoodLampScene.allCases.first { $0.sceneId == id } } else { scene = nil }
@@ -97,7 +104,11 @@ final class MoodLampModel: ObservableObject {
             }
             error = nil
         } catch {
-            reachable = false
+            failures += 1
+            hasLoaded = true
+            lastPollError = error.localizedDescription
+            // One lost packet must not flip the screen to offline: background polls have to fail twice in a row.
+            if !quiet || failures >= 2 { reachable = false }
             if !quiet { self.error = error.localizedDescription }
         }
     }
@@ -151,6 +162,9 @@ struct ContentView: View {
                 }
                 .font(.subheadline)
 
+                if !m.reachable, let detail = m.lastPollError {
+                    Text(detail).font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }
                 orb
                 controls
                 scenes
@@ -183,7 +197,7 @@ struct ContentView: View {
                 Circle().fill(m.glow)
                     .shadow(color: m.glow.opacity(lit ? 0.6 : 0), radius: 50)
                     .brightness(lit ? (m.dimming / 100 - 0.8) * 0.4 : 0)
-                Text(!m.reachable ? "Offline" : (m.on ? "\(Int(m.dimming))%" : "Off"))
+                Text(!m.hasLoaded && !m.ip.isEmpty ? "Connecting" : (!m.reachable ? "Offline" : (m.on ? "\(Int(m.dimming))%" : "Off")))
                     .font(.system(size: lit ? 46 : 26, weight: lit ? .bold : .medium, design: .rounded))
                     .foregroundStyle(lit ? Color.black.opacity(0.7) : .secondary)
             }
