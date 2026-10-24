@@ -46,6 +46,43 @@ struct ToggleMoodLampWidgetIntent: AppIntent {
     }
 }
 
+struct SetMoodLampWidgetSceneIntent: AppIntent {
+    static let title: LocalizedStringResource = "Set Mood Lamp scene"
+
+    @Parameter(title: "Scene ID") var sceneId: Int
+
+    init() {
+        self.sceneId = 6
+    }
+
+    init(sceneId: Int) {
+        self.sceneId = sceneId
+    }
+
+    func perform() async throws -> some IntentResult {
+        try await WizClient.shared.setPilot(["state": true, "sceneId": sceneId])
+        return .result()
+    }
+}
+
+private enum MoodLampWidgetScene: Int, CaseIterable, Identifiable {
+    case cozy = 6
+    case nightLight = 14
+    case focus = 15
+    case relax = 16
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .cozy: "Cozy"
+        case .nightLight: "Night light"
+        case .focus: "Focus"
+        case .relax: "Relax"
+        }
+    }
+}
+
 struct MoodLampWidgetView: View {
     let entry: MoodLampWidgetEntry
     @Environment(\.widgetFamily) private var family
@@ -89,17 +126,32 @@ struct MoodLampWidgetView: View {
                 .font(.system(size: 42))
                 .foregroundStyle(entry.isOn ? Color.orange : Color.white.opacity(0.55))
                 .frame(width: 58)
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Mood Lamp")
-                    .font(.headline)
-                Text(entry.isOn ? "On" : "Off")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 4)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Mood Lamp")
+                        .font(.headline)
+                    Spacer(minLength: 4)
+                    Text(entry.isOn ? "On" : "Off")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                HStack(spacing: 6) {
+                    ForEach(MoodLampWidgetScene.allCases) { scene in
+                        Button(intent: SetMoodLampWidgetSceneIntent(sceneId: scene.id)) {
+                            Text(scene.title)
+                                .font(.caption.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.orange)
+                    }
+                }
                 Button(intent: ToggleMoodLampWidgetIntent()) {
                     Label(entry.isOn ? "Turn Off" : "Turn On",
                           systemImage: entry.isOn ? "power" : "lightbulb.fill")
                         .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(entry.isOn ? .orange : .white.opacity(0.2))
@@ -132,7 +184,7 @@ struct MoodLampWidget: Widget {
             MoodLampWidgetView(entry: entry)
         }
         .configurationDisplayName("Mood Lamp")
-        .description("See your lamp's status and turn it on or off.")
+        .description("Check your lamp, set a scene, or turn it on or off.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

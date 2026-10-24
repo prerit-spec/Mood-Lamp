@@ -30,7 +30,7 @@ Mood Lamp puts the everyday controls for a WiZ bulb in one warm, focused interfa
 
 - **Control the essentials:** switch the lamp on or off, adjust brightness, choose a white temperature, and pick a color.
 - **Set the mood:** choose from built-in scenes, including Cozy, Candlelight, Fireplace, Sunset, Ocean, Focus, and Relax.
-- **Control it at a glance:** add the small or medium Mood Lamp widget to the iPhone Home Screen to see the last known state and toggle the bulb.
+- **Control it at a glance:** add the small or medium Mood Lamp widget to the iPhone Home Screen to see the last known state and toggle the bulb. The medium widget also has quick buttons for Cozy, Night light, Focus, and Relax.
 - **Use your voice:** run the included Siri Shortcuts to turn the lamp on or off, choose a scene, or set brightness.
 - **Stay in sync:** while the app is open, it checks the bulb regularly so changes made elsewhere can appear in the app.
 
@@ -38,7 +38,7 @@ Mood Lamp puts the everyday controls for a WiZ bulb in one warm, focused interfa
 
 Mood Lamp talks directly to the bulb over your local network using WiZ's UDP control protocol on port **38899**. That keeps ordinary controls local and avoids requiring a Mood Lamp account or a separate Mood Lamp server.
 
-The iPhone widget is a WidgetKit extension. The app and widget share the configured bulb address and last known power state through an Apple App Group. When you use the widget's toggle, it checks the bulb's current state before changing it. The widget is intended as a quick control—not a promise of continuous, real-time monitoring while iOS is refreshing it in the background.
+The iPhone widget is a WidgetKit extension. The app and widget share the configured bulb address and last known power state through an Apple App Group. When you use the widget's toggle, it checks the bulb's current state before changing it; scene buttons set the selected scene directly. The widget is intended as a quick control—not a promise of continuous, real-time monitoring while iOS is refreshing it in the background.
 
 ## Get started
 
