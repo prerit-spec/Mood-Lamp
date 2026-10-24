@@ -14,6 +14,16 @@
 
 ---
 
+## Sample screens
+
+These sample files show the app's main controls and scene presets.
+
+<p align="center">
+  <img src="docs/samples/sample-color-picker.png" alt="Mood Lamp color picker and scene controls" width="280">
+  <img src="docs/samples/sample-color-wheel.png" alt="Mood Lamp color wheel" width="280">
+  <img src="docs/samples/sample-warm-white.png" alt="Mood Lamp warm white and scenes screen" width="280">
+</p>
+
 Mood Lamp puts the everyday controls for a WiZ bulb in one warm, focused interface. Change brightness, tune white temperature, pick a color, or set a scene—and control the lamp from an iPhone widget or a Siri Shortcut when you do not want to open the app.
 
 ## What you can do
