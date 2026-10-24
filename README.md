@@ -16,12 +16,23 @@
 
 ## Sample screens
 
-These sample files show the app's main controls and scene presets.
+These are the actual Mood Lamp screens on an iPhone 15 Pro, followed by the compact widget UI variants.
+
+### App UI on iPhone 15 Pro
 
 <p align="center">
-  <img src="docs/samples/sample-color-picker.png" alt="Mood Lamp color picker and scene controls" width="280">
-  <img src="docs/samples/sample-color-wheel.png" alt="Mood Lamp color wheel" width="280">
-  <img src="docs/samples/sample-warm-white.png" alt="Mood Lamp warm white and scenes screen" width="280">
+  <img src="docs/samples/sample-color-picker.png" alt="Mood Lamp color picker and scene controls on iPhone 15 Pro" width="280">
+  <img src="docs/samples/sample-color-wheel.png" alt="Mood Lamp color wheel on iPhone 15 Pro" width="280">
+  <img src="docs/samples/sample-warm-white.png" alt="Mood Lamp warm white and scenes screen on iPhone 15 Pro" width="280">
+</p>
+
+### Widget UI
+
+The widget keeps the same Mood Lamp feel in a smaller, more glanceable format for the iPhone Home Screen.
+
+<p align="center">
+  <img src="docs/samples/widget-mood-lamp-full.png" alt="Mood Lamp widget full size" width="420">
+  <img src="docs/samples/widget-mood-lamp-compact.png" alt="Mood Lamp compact widget" width="280">
 </p>
 
 Mood Lamp puts the everyday controls for a WiZ bulb in one warm, focused interface. Change brightness, tune white temperature, pick a color, or set a scene—and control the lamp from an iPhone widget or a Siri Shortcut when you do not want to open the app.
