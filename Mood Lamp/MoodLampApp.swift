@@ -341,7 +341,7 @@ struct ContentView: View {
                 active: AdaptiveLightingManager.shared.enabled
             ) { toggleAdaptive() }
 
-            #if canImport(MediaPlayer)
+            #if canImport(MediaPlayer) && !os(macOS)
             quickActionButton(
                 icon: "music.note",
                 label: "Music Mood",
@@ -403,7 +403,7 @@ struct ContentView: View {
         }
     }
 
-    #if canImport(MediaPlayer)
+    #if canImport(MediaPlayer) && !os(macOS)
     private func toggleMusicMood() {
         let manager = MusicMoodManager.shared
         if manager.isActive {

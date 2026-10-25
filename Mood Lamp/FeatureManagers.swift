@@ -257,7 +257,7 @@ final class MusicMoodManager: ObservableObject {
         stop()
         isActive = true
 
-        #if canImport(MediaPlayer)
+        #if canImport(MediaPlayer) && !os(macOS)
         pollingTask = Task { [weak self] in
             let player = MPMusicPlayerController.systemMusicPlayer
             var lastItemId: MPMediaEntityPersistentID = 0
@@ -295,7 +295,7 @@ final class MusicMoodManager: ObservableObject {
 
     // MARK: - Colour Extraction
 
-    #if canImport(MediaPlayer)
+    #if canImport(MediaPlayer) && !os(macOS)
     /// Scales the image down to 1×1 pixel and reads the colour, converting to HSB.
     #if canImport(UIKit)
     private func extractDominantColour(from image: UIImage) -> (hue: Double, sat: Double) {
