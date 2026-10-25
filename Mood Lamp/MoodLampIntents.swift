@@ -1,4 +1,12 @@
 import AppIntents
+import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
+// MARK: - MoodLampScene
 
 /// Scenes shared by the screen and by Siri. Raw values are WiZ scene IDs.
 enum MoodLampScene: String, AppEnum, CaseIterable {
@@ -43,6 +51,26 @@ enum MoodLampScene: String, AppEnum, CaseIterable {
         }
     }
 
+    /// Characteristic colours for swatch previews.
+    var colors: [Color] {
+        switch self {
+        case .warmWhite:   return [Color(red: 1.0, green: 0.85, blue: 0.6), Color(red: 1.0, green: 0.75, blue: 0.45)]
+        case .daylight:    return [Color(red: 0.9, green: 0.95, blue: 1.0), Color(red: 0.8, green: 0.9, blue: 1.0)]
+        case .coolWhite:   return [Color(red: 0.85, green: 0.92, blue: 1.0), Color(red: 0.75, green: 0.85, blue: 0.98)]
+        case .nightLight:  return [Color(red: 1.0, green: 0.6, blue: 0.2), Color(red: 0.9, green: 0.4, blue: 0.1)]
+        case .focus:       return [Color(red: 0.9, green: 0.95, blue: 1.0), Color(red: 0.7, green: 0.85, blue: 1.0)]
+        case .relax:       return [Color(red: 1.0, green: 0.8, blue: 0.5), Color(red: 0.95, green: 0.65, blue: 0.3)]
+        case .tvTime:      return [Color(red: 0.3, green: 0.3, blue: 0.6), Color(red: 0.15, green: 0.15, blue: 0.4)]
+        case .cozy:        return [Color(red: 1.0, green: 0.7, blue: 0.3), Color(red: 0.95, green: 0.5, blue: 0.15)]
+        case .candlelight: return [Color(red: 1.0, green: 0.7, blue: 0.2), Color(red: 1.0, green: 0.5, blue: 0.05)]
+        case .fireplace:   return [Color(red: 1.0, green: 0.4, blue: 0.0), Color(red: 1.0, green: 0.2, blue: 0.0), Color(red: 0.8, green: 0.1, blue: 0.0)]
+        case .sunset:      return [Color(red: 1.0, green: 0.5, blue: 0.2), Color(red: 1.0, green: 0.3, blue: 0.4), Color(red: 0.7, green: 0.2, blue: 0.5)]
+        case .ocean:       return [Color(red: 0.0, green: 0.5, blue: 0.8), Color(red: 0.0, green: 0.3, blue: 0.6), Color(red: 0.0, green: 0.7, blue: 0.9)]
+        case .party:       return [Color.red, Color.blue, Color.green, Color.purple]
+        case .romance:     return [Color(red: 0.9, green: 0.2, blue: 0.4), Color(red: 0.7, green: 0.1, blue: 0.3)]
+        }
+    }
+
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Scene"
     static let caseDisplayRepresentations: [MoodLampScene: DisplayRepresentation] = [
         .warmWhite: "Warm white", .daylight: "Daylight", .coolWhite: "Cool white",
@@ -51,6 +79,8 @@ enum MoodLampScene: String, AppEnum, CaseIterable {
         .sunset: "Sunset", .ocean: "Ocean", .party: "Party", .romance: "Romance",
     ]
 }
+
+// MARK: - Intents
 
 struct TurnMoodLampOnIntent: AppIntent {
     static let title: LocalizedStringResource = "Turn Mood Lamp on"
@@ -88,6 +118,31 @@ struct SetBrightnessIntent: AppIntent {
     }
 }
 
+struct SetColorIntent: AppIntent {
+    static let title: LocalizedStringResource = "Set Mood Lamp colour"
+    @Parameter(title: "Hue (0-360)") var hue: Int
+    @Parameter(title: "Saturation (0-100)") var saturation: Int
+
+    func perform() async throws -> some IntentResult {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        PlatformColor(
+            hue: CGFloat(hue) / 360,
+            saturation: CGFloat(saturation) / 100,
+            brightness: 1,
+            alpha: 1
+        ).getRed(&r, green: &g, blue: &b, alpha: &a)
+        try await WizClient.shared.setPilot([
+            "state": true,
+            "r": Int((r * 255).rounded()),
+            "g": Int((g * 255).rounded()),
+            "b": Int((b * 255).rounded()),
+        ])
+        return .result()
+    }
+}
+
+// MARK: - Shortcuts
+
 struct MoodLampShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
@@ -102,5 +157,9 @@ struct MoodLampShortcuts: AppShortcutsProvider {
             intent: SetSceneIntent(),
             phrases: ["\(.applicationName) \(\.$scene)", "Set \(.applicationName) to \(\.$scene)"],
             shortTitle: "Set scene", systemImageName: "sparkles")
+        AppShortcut(
+            intent: SetColorIntent(),
+            phrases: ["Set \(.applicationName) colour"],
+            shortTitle: "Set colour", systemImageName: "paintpalette.fill")
     }
 }

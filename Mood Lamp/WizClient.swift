@@ -2,6 +2,8 @@ import Foundation
 import Network
 import WidgetKit
 
+// MARK: - Error Type
+
 enum WizError: LocalizedError {
     case noIP, timeout, badReply
     var errorDescription: String? {
@@ -13,13 +15,17 @@ enum WizError: LocalizedError {
     }
 }
 
+// MARK: - WizClient
+
 /// Talks to a WiZ lamp directly over UDP (port 38899). No server needed.
-final class WizClient: @unchecked Sendable {
+nonisolated final class WizClient: @unchecked Sendable {
     static let shared = WizClient()
     private static let appGroupIdentifier = "group.com.preritrudrakarpersonalteam.bulb"
     private static var sharedDefaults: UserDefaults? {
         UserDefaults(suiteName: appGroupIdentifier)
     }
+
+    // MARK: - IP & MAC Properties
 
     var ip: String {
         get {
@@ -38,9 +44,20 @@ final class WizClient: @unchecked Sendable {
         }
     }
 
-    private final class Once: @unchecked Sendable {
-        nonisolated(unsafe) var done = false
+    /// The lamp's MAC address never changes, unlike its IP.
+    var mac: String {
+        get {
+            Self.sharedDefaults?.string(forKey: "bulbMac")
+                ?? UserDefaults.standard.string(forKey: "bulbMac")
+                ?? ""
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "bulbMac")
+            Self.sharedDefaults?.set(newValue, forKey: "bulbMac")
+        }
     }
+
+    // MARK: - Public API
 
     /// UDP has no delivery guarantee and Wi-Fi bulbs drop packets, so try a few times before giving up.
     func send(_ payload: [String: Any], to target: String? = nil, timeout: TimeInterval = 1.0, attempts: Int = 3) async throws -> [String: Any] {
@@ -50,24 +67,105 @@ final class WizClient: @unchecked Sendable {
             catch WizError.noIP { throw WizError.noIP }
             catch {
                 lastError = error
-                if attempt < attempts - 1 { try? await Task.sleep(nanoseconds: 200_000_000) }
+                if attempt < attempts - 1 { try? await Task.sleep(for: .milliseconds(200)) }
             }
         }
         throw lastError
     }
 
+    func setPilot(_ params: [String: Any]) async throws {
+        _ = try await sendResilient(["method": "setPilot", "params": params])
+        let defaults = Self.sharedDefaults
+        var needsReload = false
+        if let state = params["state"] as? Bool {
+            let previousState = defaults?.object(forKey: "bulbOn") as? Bool
+            defaults?.set(state, forKey: "bulbOn")
+            if previousState != state { needsReload = true }
+        }
+        if let dimming = params["dimming"] as? Int {
+            let previousDimming = defaults?.integer(forKey: "bulbDimming")
+            defaults?.set(dimming, forKey: "bulbDimming")
+            if previousDimming != dimming { needsReload = true }
+        }
+        if let sceneId = params["sceneId"] as? Int {
+            let previousScene = defaults?.integer(forKey: "bulbSceneId")
+            defaults?.set(sceneId, forKey: "bulbSceneId")
+            if previousScene != sceneId { needsReload = true }
+        }
+        if needsReload {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+    }
+
+    func getPilot(resilient: Bool = true) async throws -> [String: Any] {
+        let payload: [String: Any] = ["method": "getPilot", "params": [String: Any]()]
+        let reply: [String: Any]
+        if resilient { reply = try await sendResilient(payload) }
+        else { reply = try await send(payload, timeout: 1.0) }
+        let result = reply["result"] as? [String: Any] ?? [:]
+        if let m = result["mac"] as? String { mac = m }
+        if let state = result["state"] as? Bool {
+            let defaults = Self.sharedDefaults
+            let previousState = defaults?.object(forKey: "bulbOn") as? Bool
+            defaults?.set(state, forKey: "bulbOn")
+            if previousState != state {
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        }
+        if let dimming = result["dimming"] as? Int {
+            Self.sharedDefaults?.set(dimming, forKey: "bulbDimming")
+        }
+        if let sceneId = result["sceneId"] as? Int {
+            Self.sharedDefaults?.set(sceneId, forKey: "bulbSceneId")
+        }
+        return result
+    }
+
+    // MARK: - Resilient Send (MAC-based rediscovery)
+
+    /// Sends to the saved IP. If the lamp stops answering, searches the network for its MAC and retries once.
+    private func sendResilient(_ payload: [String: Any]) async throws -> [String: Any] {
+        do {
+            return try await send(payload)
+        } catch WizError.timeout where !mac.isEmpty {
+            guard let match = await scan().first(where: { $0.mac == mac }) else { throw WizError.timeout }
+            ip = match.ip
+            return try await send(payload)
+        }
+    }
+
+    // MARK: - Core UDP Exchange
+
+    /// Sends a single UDP request with a TaskGroup-based timeout.
     private func sendOnce(_ payload: [String: Any], to target: String? = nil, timeout: TimeInterval) async throws -> [String: Any] {
         let host = (target ?? ip).trimmingCharacters(in: .whitespaces)
         guard !host.isEmpty else { throw WizError.noIP }
         let data = try JSONSerialization.data(withJSONObject: payload)
+
+        return try await withThrowingTaskGroup(of: [String: Any].self) { group in
+            group.addTask {
+                try await self.udpExchange(data: data, host: host)
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(timeout))
+                throw WizError.timeout
+            }
+            guard let result = try await group.next() else { throw WizError.timeout }
+            group.cancelAll()
+            return result
+        }
+    }
+
+    /// Opens a UDP connection, sends data, waits for a reply, and returns the parsed JSON.
+    private func udpExchange(data: Data, host: String) async throws -> [String: Any] {
         let conn = NWConnection(host: NWEndpoint.Host(host), port: 38899, using: .udp)
         let queue = DispatchQueue(label: "wiz.udp")
-        let once = Once()
 
         return try await withCheckedThrowingContinuation { cont in
-            func finish(_ result: Result<[String: Any], Error>) {
-                guard !once.done else { return }
-                once.done = true
+            var resumed = false
+            let finish: (Result<[String: Any], Error>) -> Void = { result in
+                guard !resumed else { return }
+                resumed = true
                 conn.cancel()
                 cont.resume(with: result)
             }
@@ -85,70 +183,17 @@ final class WizClient: @unchecked Sendable {
                         }
                     })
                 case .failed(let e): finish(.failure(e))
+                case .cancelled:
+                    // Connection was cancelled (e.g. by timeout); if we haven't resumed yet, report timeout
+                    finish(.failure(WizError.timeout))
                 default: break
                 }
             }
-            queue.asyncAfter(deadline: .now() + timeout) { finish(.failure(WizError.timeout)) }
             conn.start(queue: queue)
         }
     }
 
-    func setPilot(_ params: [String: Any]) async throws {
-        _ = try await sendResilient(["method": "setPilot", "params": params])
-        if let state = params["state"] as? Bool {
-            let defaults = Self.sharedDefaults
-            let previousState = defaults?.object(forKey: "bulbOn") as? Bool
-            defaults?.set(state, forKey: "bulbOn")
-            if previousState != state { WidgetCenter.shared.reloadAllTimelines() }
-        }
-    }
-
-    func getPilot(resilient: Bool = true) async throws -> [String: Any] {
-        let payload: [String: Any] = ["method": "getPilot", "params": [String: Any]()]
-        let reply: [String: Any]
-        if resilient { reply = try await sendResilient(payload) }
-        else { reply = try await send(payload, timeout: 1.0) }
-        let result = reply["result"] as? [String: Any] ?? [:]
-        if let m = result["mac"] as? String { mac = m }   // remembered so the lamp can be found again
-        if let state = result["state"] as? Bool {
-            let defaults = Self.sharedDefaults
-            let previousState = defaults?.object(forKey: "bulbOn") as? Bool
-            defaults?.set(state, forKey: "bulbOn")
-            if previousState != state {
-                WidgetCenter.shared.reloadAllTimelines()
-            }
-        }
-        if let dimming = result["dimming"] as? Int {
-            Self.sharedDefaults?.set(dimming, forKey: "bulbDimming")
-        }
-        return result
-    }
-
-    // MARK: - Finding the lamp again after its IP changes
-
-    /// The lamp's MAC address never changes, unlike its IP.
-    var mac: String {
-        get {
-            Self.sharedDefaults?.string(forKey: "bulbMac")
-                ?? UserDefaults.standard.string(forKey: "bulbMac")
-                ?? ""
-        }
-        set {
-            UserDefaults.standard.set(newValue, forKey: "bulbMac")
-            Self.sharedDefaults?.set(newValue, forKey: "bulbMac")
-        }
-    }
-
-    /// Sends to the saved IP. If the lamp stops answering, searches the network for its MAC and retries once.
-    private func sendResilient(_ payload: [String: Any]) async throws -> [String: Any] {
-        do {
-            return try await send(payload)
-        } catch WizError.timeout where !mac.isEmpty {
-            guard let match = await scan().first(where: { $0.mac == mac }) else { throw WizError.timeout }
-            ip = match.ip
-            return try await send(payload)
-        }
-    }
+    // MARK: - Network Scan
 
     private func phoneSubnetPrefix() -> String? {
         var ifaddr: UnsafeMutablePointer<ifaddrs>?

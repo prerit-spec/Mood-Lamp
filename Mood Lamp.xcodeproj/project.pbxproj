@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		000000000000000200000201 /* MoodLampWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000200000401 /* MoodLampWidget.swift */; };
-		000000000000000200000202 /* WizClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000200000405 /* WizClient.swift */; };
+		000000000000000200000202 /* Mood Lamp/WizClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000200000405 /* Mood Lamp/WizClient.swift */; };
 		000000000000000200000203 /* Mood Lamp Widget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 000000000000000200000410 /* Mood Lamp Widget.appex */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -22,14 +22,26 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		000000000000000200000501 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				000000000000000200000203 /* Mood Lamp Widget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* Mood Lamp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mood Lamp.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		000000000000000200000401 /* MoodLampWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodLampWidget.swift; sourceTree = "<group>"; };
 		000000000000000200000403 /* MoodLampWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MoodLampWidget.entitlements; sourceTree = "<group>"; };
+		000000000000000200000404 /* Mood Lamp/iOS App Groups.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Mood Lamp/iOS App Groups.entitlements"; sourceTree = SOURCE_ROOT; };
+		000000000000000200000405 /* Mood Lamp/WizClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Mood Lamp/WizClient.swift"; sourceTree = SOURCE_ROOT; };
 		000000000000000200000406 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		000000000000000200000404 /* iOS App Groups.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Mood Lamp/iOS App Groups.entitlements"; sourceTree = SOURCE_ROOT; };
-		000000000000000200000405 /* WizClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Mood Lamp/WizClient.swift"; sourceTree = SOURCE_ROOT; };
-		000000000000000200000410 /* Mood Lamp Widget.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = "Mood Lamp Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000200000410 /* Mood Lamp Widget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Mood Lamp Widget.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -46,6 +58,11 @@
 			files = (
 			);
 		};
+		000000000000000200000122 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -54,8 +71,8 @@
 			children = (
 				000000000000000000000010 /* Mood Lamp */,
 				000000000000000200000601 /* Mood Lamp Widget */,
-				000000000000000200000404 /* iOS App Groups.entitlements */,
-				000000000000000200000405 /* WizClient.swift */,
+				000000000000000200000404 /* Mood Lamp/iOS App Groups.entitlements */,
+				000000000000000200000405 /* Mood Lamp/WizClient.swift */,
 				000000000000000000000020 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -93,11 +110,11 @@
 			);
 			buildRules = (
 			);
-			fileSystemSynchronizedGroups = (
-				000000000000000000000010 /* Mood Lamp */,
-			);
 			dependencies = (
 				000000000000000200000801 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				000000000000000000000010 /* Mood Lamp */,
 			);
 			name = "Mood Lamp";
 			productName = "Mood Lamp";
@@ -113,8 +130,6 @@
 				000000000000000200000123 /* Resources */,
 			);
 			buildRules = (
-			);
-			dependencies = (
 			);
 			name = "Mood Lamp Widget";
 			productName = "Mood Lamp Widget";
@@ -157,65 +172,13 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXTargetDependency section */
-		000000000000000200000801 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-			);
-			target = 000000000000000200000701 /* Mood Lamp Widget */;
-			targetProxy = 000000000000000200000301 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		000000000000000200000501 /* Embed App Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				000000000000000200000203 /* Mood Lamp Widget.appex in Embed App Extensions */,
-			);
-			name = "Embed App Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		000000000000000200000122 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
-
-/* Begin PBXResourcesBuildPhase section */
-		000000000000000200000123 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXSourcesBuildPhase section */
-		000000000000000200000121 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				000000000000000200000201 /* MoodLampWidget.swift in Sources */,
-				000000000000000200000202 /* WizClient.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXSourcesBuildPhase section */
-
 /* Begin PBXResourcesBuildPhase section */
 		000000000000000140000000 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		000000000000000200000123 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -228,7 +191,23 @@
 			files = (
 			);
 		};
+		000000000000000200000121 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				000000000000000200000201 /* MoodLampWidget.swift in Sources */,
+				000000000000000200000202 /* Mood Lamp/WizClient.swift in Sources */,
+			);
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		000000000000000200000801 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = 000000000000000200000701 /* Mood Lamp Widget */;
+			targetProxy = 000000000000000200000301 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		000000000000000011000000 /* Debug configuration for PBXProject "Mood Lamp" */ = {
@@ -370,9 +349,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Mood Lamp/Mood Lamp.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "Mood Lamp/iOS App Groups.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "Mood Lamp/iOS App Groups.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Mood Lamp/Mood Lamp.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -418,9 +397,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Mood Lamp/Mood Lamp.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "Mood Lamp/iOS App Groups.entitlements";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "Mood Lamp/iOS App Groups.entitlements";
+				"CODE_SIGN_ENTITLEMENTS[sdk=macosx*]" = "Mood Lamp/Mood Lamp.entitlements";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
