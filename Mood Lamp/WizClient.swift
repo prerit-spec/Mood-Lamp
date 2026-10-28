@@ -104,19 +104,25 @@ nonisolated final class WizClient: @unchecked Sendable {
         else { reply = try await send(payload, timeout: 1.0) }
         let result = reply["result"] as? [String: Any] ?? [:]
         if let m = result["mac"] as? String { mac = m }
+        let defaults = Self.sharedDefaults
+        var needsReload = false
         if let state = result["state"] as? Bool {
-            let defaults = Self.sharedDefaults
             let previousState = defaults?.object(forKey: "bulbOn") as? Bool
             defaults?.set(state, forKey: "bulbOn")
-            if previousState != state {
-                WidgetCenter.shared.reloadAllTimelines()
-            }
+            if previousState != state { needsReload = true }
         }
         if let dimming = result["dimming"] as? Int {
-            Self.sharedDefaults?.set(dimming, forKey: "bulbDimming")
+            let previousDimming = defaults?.object(forKey: "bulbDimming") as? Int
+            defaults?.set(dimming, forKey: "bulbDimming")
+            if previousDimming != dimming { needsReload = true }
         }
         if let sceneId = result["sceneId"] as? Int {
-            Self.sharedDefaults?.set(sceneId, forKey: "bulbSceneId")
+            let previousScene = defaults?.object(forKey: "bulbSceneId") as? Int
+            defaults?.set(sceneId, forKey: "bulbSceneId")
+            if previousScene != sceneId { needsReload = true }
+        }
+        if needsReload {
+            WidgetCenter.shared.reloadAllTimelines()
         }
         return result
     }
@@ -161,35 +167,39 @@ nonisolated final class WizClient: @unchecked Sendable {
         let conn = NWConnection(host: NWEndpoint.Host(host), port: 38899, using: .udp)
         let queue = DispatchQueue(label: "wiz.udp")
 
-        return try await withCheckedThrowingContinuation { cont in
-            var resumed = false
-            let finish: (Result<[String: Any], Error>) -> Void = { result in
-                guard !resumed else { return }
-                resumed = true
-                conn.cancel()
-                cont.resume(with: result)
-            }
-            conn.stateUpdateHandler = { state in
-                switch state {
-                case .ready:
-                    conn.send(content: data, completion: .contentProcessed { err in
-                        if let err { finish(.failure(err)); return }
-                        conn.receiveMessage { content, _, _, error in
-                            if let error { finish(.failure(error)); return }
-                            guard let content,
-                                  let obj = try? JSONSerialization.jsonObject(with: content) as? [String: Any]
-                            else { finish(.failure(WizError.badReply)); return }
-                            finish(.success(obj))
-                        }
-                    })
-                case .failed(let e): finish(.failure(e))
-                case .cancelled:
-                    // Connection was cancelled (e.g. by timeout); if we haven't resumed yet, report timeout
-                    finish(.failure(WizError.timeout))
-                default: break
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { cont in
+                var resumed = false
+                let finish: (Result<[String: Any], Error>) -> Void = { result in
+                    guard !resumed else { return }
+                    resumed = true
+                    conn.cancel()
+                    cont.resume(with: result)
                 }
+                conn.stateUpdateHandler = { state in
+                    switch state {
+                    case .ready:
+                        conn.send(content: data, completion: .contentProcessed { err in
+                            if let err { finish(.failure(err)); return }
+                            conn.receiveMessage { content, _, _, error in
+                                if let error { finish(.failure(error)); return }
+                                guard let content,
+                                      let obj = try? JSONSerialization.jsonObject(with: content) as? [String: Any]
+                                else { finish(.failure(WizError.badReply)); return }
+                                finish(.success(obj))
+                            }
+                        })
+                    case .failed(let e): finish(.failure(e))
+                    case .cancelled:
+                        // Connection cancellation is used to enforce the task-group timeout.
+                        finish(.failure(WizError.timeout))
+                    default: break
+                    }
+                }
+                conn.start(queue: queue)
             }
-            conn.start(queue: queue)
+        } onCancel: {
+            conn.cancel()
         }
     }
 

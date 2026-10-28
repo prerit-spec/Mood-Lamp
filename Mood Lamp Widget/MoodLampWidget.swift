@@ -225,18 +225,7 @@ struct ToggleMoodLampWidgetIntent: AppIntent {
         let current = defaults?.bool(forKey: "bulbOn") ?? false
         let nextState = !current
 
-        // Optimistically update shared defaults for instant widget response
-        defaults?.set(nextState, forKey: "bulbOn")
-        WidgetCenter.shared.reloadAllTimelines()
-
-        do {
-            try await WizClient.shared.setPilot(["state": nextState])
-        } catch {
-            // Revert if UDP communication failed
-            defaults?.set(current, forKey: "bulbOn")
-            WidgetCenter.shared.reloadAllTimelines()
-            throw error
-        }
+        try await WizClient.shared.setPilot(["state": nextState])
         return .result()
     }
 }
@@ -255,11 +244,6 @@ struct SetMoodLampWidgetSceneIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        let defaults = UserDefaults(suiteName: appGroupIdentifier)
-        defaults?.set(true, forKey: "bulbOn")
-        defaults?.set(sceneId, forKey: "bulbSceneId")
-        WidgetCenter.shared.reloadAllTimelines()
-
         try await WizClient.shared.setPilot(["state": true, "sceneId": sceneId])
         return .result()
     }
@@ -280,11 +264,6 @@ struct SetMoodLampWidgetBrightnessIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         let clamped = min(100, max(10, level))
-        let defaults = UserDefaults(suiteName: appGroupIdentifier)
-        defaults?.set(true, forKey: "bulbOn")
-        defaults?.set(clamped, forKey: "bulbDimming")
-        WidgetCenter.shared.reloadAllTimelines()
-
         try await WizClient.shared.setPilot(["state": true, "dimming": clamped])
         return .result()
     }
@@ -308,10 +287,6 @@ struct StepMoodLampWidgetBrightnessIntent: AppIntent {
         let current = defaults?.integer(forKey: "bulbDimming") ?? 80
         let effective = current == 0 ? 80 : current
         let target = min(100, max(10, effective + delta))
-
-        defaults?.set(true, forKey: "bulbOn")
-        defaults?.set(target, forKey: "bulbDimming")
-        WidgetCenter.shared.reloadAllTimelines()
 
         try await WizClient.shared.setPilot(["state": true, "dimming": target])
         return .result()
@@ -911,10 +886,6 @@ struct ToggleMoodLampControlIntent: SetValueIntent {
     @Parameter(title: "Is On") var value: Bool
 
     func perform() async throws -> some IntentResult {
-        let defaults = UserDefaults(suiteName: appGroupIdentifier)
-        defaults?.set(value, forKey: "bulbOn")
-        WidgetCenter.shared.reloadAllTimelines()
-
         try await WizClient.shared.setPilot(["state": value])
         return .result()
     }
